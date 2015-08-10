@@ -9,7 +9,6 @@
 % a gray scale image.
 % 
 
-clear all
 close all
 imtool close all;
 clc
@@ -18,14 +17,15 @@ fontSize = 16;
 
 % Read a file
 [dataIn, att] = readParseInput();
+%[dataIn, att] = readParseInput('./TEST/');
 
 disp('Dataset attributes:');
 disp(att);
-
+%
 numImages = att.numImages;
 if numImages > 3
-    str = strcat('There are ', num2str(numImages), ...
-        'how many do you want to segment? [Default=92]: ');
+    str = strcat('How many images do you want to segment? [Default=',...
+        num2str(numImages),']: ');
     a = input(str);
     
     if ~isempty(a)
@@ -35,6 +35,7 @@ end
 
 % output file
 dataBin = zeros(att.Height, att.Width, att.Depth_RGB, numImages);
+binaryImageSum = zeros(size(dataIn(:,:,1,1)));
 
 % deal with Warinings.
 set(0,'recursionlimit',750);
@@ -44,6 +45,7 @@ for i=1:numImages
         grayImage = dataIn(:,:,j,i);
 
         imagesc(grayImage);
+        jet2=jet;jet2(1,:)=0;colormap(jet2); 
         axis on;
         
         str = strcat('Original Grayscale Image: ',num2str(i), ...
@@ -65,22 +67,18 @@ for i=1:numImages
         message = sprintf(['Left click and hold to begin drawing.' ...
             '\nSimply lift the mouse button to finish']);
         uiwait(msgbox(message));
-        binaryImage = zeros(size(grayImage));
-        binaryImage = binaryImage > 5;
-        binaryImageSum = binaryImage;
         
         for k=1:numCells
             hFH = imfreehand();
-            % Create a binary image ("mask") from the ROI object.
-            binaryImage = hFH.createMask();
-            xy = hFH.getPosition;
-            %
-            binaryImageSum = bitor(binaryImageSum,binaryImage);
-        end
-        
+             % Create a binary image ("mask") from the ROI object.
+             %xy = hFH.getPosition;
+             binaryImageSum = bitor(binaryImageSum,hFH.createMask());
+        end  
         dataBin(:,:,j,i) = binaryImageSum;
+        close all;
     end
 end
 
 dataL = bwlabeln(dataBin);
+writeOutput(dataL, att);
 

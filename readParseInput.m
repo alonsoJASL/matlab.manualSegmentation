@@ -52,6 +52,10 @@ switch nargin
             filenames = {dirlist.name};
             filenames(1:2) = []; % Remove '.' and '..' from the list.
             
+            if strcmp(filenames{1},'.DS_Store')
+                filenames(1) = [];
+            end
+            
             N = length(filenames);
             
             if N>0
@@ -65,11 +69,12 @@ switch nargin
                     end
                 end
                 
-                if nargout > 1
-                    attributes = struct('Height', II(1).Height, ...
-                        'Width',II(1).Width, 'Depth_RGB', size(II,1),...
-                        'numImages',N);
-                end
+                
+                attributes = struct('fileName', baseFileName,...
+                    'isDir', true, ...
+                    'Height', II(1).Height, ...
+                    'Width',II(1).Width, 'Depth_RGB', size(II,1),...
+                    'numImages',N);
                 
             else 
                 errorMessage = ...
@@ -97,11 +102,11 @@ switch nargin
                 dataIn(:,:,j) = imread(baseFileName,j);
             end
             
-            if nargout > 1
-                attributes = struct('Height', II(1).Height, ...
-                    'Width',II(1).Width, 'Depth_RGB', size(II,1),...
-                    'numImages',1);
-            end
+            attributes = struct('fileName', baseFileName,...
+                'isDir', false, ...
+                'Height', II(1).Height, ...
+                'Width',II(1).Width, 'Depth_RGB', size(II,1),...
+                'numImages',1);
         end
         
 end
