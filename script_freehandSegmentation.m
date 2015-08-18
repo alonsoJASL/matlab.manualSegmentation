@@ -17,7 +17,6 @@ fontSize = 16;
 
 % Read a file
 [dataIn, att] = readParseInput();
-%[dataIn, att] = readParseInput('./TEST/');
 
 disp('Dataset attributes:');
 disp(att);
@@ -45,6 +44,7 @@ for i=1:numImages
         grayImage = dataIn(:,:,j,i);
 
         imagesc(grayImage);
+        colormap gray
         jet2=jet;jet2(1,:)=0;colormap(jet2); 
         axis on;
         
@@ -64,9 +64,11 @@ for i=1:numImages
         end
         
         %
-        message = sprintf(['Left click and hold to begin drawing.' ...
-            '\nSimply lift the mouse button to finish']);
-        uiwait(msgbox(message));
+        if i==1 && j==1
+            message = sprintf(['Left click and hold to begin drawing.' ...
+                '\nSimply lift the mouse button to finish']);
+            uiwait(msgbox(message));
+        end
         
         for k=1:numCells
             hFH = imfreehand();
