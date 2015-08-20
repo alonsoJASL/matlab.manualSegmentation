@@ -119,6 +119,9 @@ for i=1:numImages
             binaryImageSum = bitor(binaryImageSum,hFH.createMask());
         end
         dataBin(:,:,j,i) = binaryImageSum;
+        
+        % reset binaryImage
+        binaryImageSum = zeros(size(dataIn(:,:,1,1)));
         close all;
     end
 end
