@@ -29,6 +29,9 @@ function [dataBin] = freehandSegmentation(dataIn, imAtt)
 %                   the images. It is such that:
 %               size(dataBin) = [Height, Width, Depth, numImages];
 % 
+global KEY_IS_PRESSED;
+KEY_IS_PRESSED = 0;
+
 if nargin == 1
     switch ndims(dataIn)
         case 2
@@ -94,36 +97,40 @@ for i=1:numImages
             ' Layer: ', num2str(j));
         title(str , 'FontSize', 18);
         set(gcf, 'Position', get(0,'Screensize')); % Maximize figure.
+        set(gcf, 'KeyPressFcn', @myKeyPressFcn); % Get key press for ending.
         
-        % Ask for the number of objects to be segmented.
-        numCells = inputdlg('How many objects are we segmenting?',...
-            'Choose a number');
-        numCells = str2num(numCells{1});
-        
-        if isempty(numCells)
-            uiwait(msgbox('Incorrect input, using numCells=1'));
-            numCells = 1;
-        end
-        
-        %
+        numCells = 0;
+
         if i==1 && j==1
             message = sprintf(['Left click and hold to begin drawing.' ...
-                '\nSimply lift the mouse button to finish']);
+                '\nSimply press any key before you do the last cell.']);
             uiwait(msgbox(message));
         end
-        
-        for k=1:numCells
+
+        %for k=1:numCells
+         while ~KEY_IS_PRESSED               
             hFH = imfreehand();
             % Create a binary image ("mask") from the ROI object.
             %xy = hFH.getPosition;
             binaryImageSum = bitor(binaryImageSum,hFH.createMask());
+            numCells = numCells+1;
         end
         dataBin(:,:,j,i) = binaryImageSum;
         
         % reset binaryImage
         binaryImageSum = zeros(size(dataIn(:,:,1,1)));
+        KEY_IS_PRESSED = 0;
         close all;
     end
+end
+end
+
+function myKeyPressFcn(hObject, event)
+    global KEY_IS_PRESSED
+    KEY_IS_PRESSED  = 1;
+    message = ['Key pressed, segment your last cell or'...
+        '\nclick on any of the already segmented cells.'];
+    uiwait(msgbox(message));
 end
 
 

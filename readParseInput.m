@@ -59,7 +59,7 @@ switch nargin
             N = length(filenames);
             
             if N>0
-                II = imfinfo(strcat(baseFileName,'/', filenames{1}));
+                II = imfinfo(strcat(baseFileName,'/', filenames{end}));
                 dataIn = zeros(II(1).Height, II(1).Width, size(II,1),N);
                 
                 for i=1:N
@@ -109,4 +109,5 @@ switch nargin
                 'numImages',1);
         end
         
+end
 end
