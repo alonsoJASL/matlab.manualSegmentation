@@ -27,13 +27,13 @@ mkdir(folderName);
 for i=1:outAttributes.numImages
     tiffstr = strcat(folderName, 'man',num2str(i),'.tif');
     
-    for j=1:outAttributes.Depth_RGB
+    for j=1:outAttributes.Depth
         ui16image = uint16(dataOut(:,:,j,i));
         if i==1
             imwrite(ui16image(:,:,j),tiffstr);
         else
             imwrite(ui16image(:,:,j),tiffstr,...
-                'WriteMode','append');
+                'WriteMode','append'); 
         end
     end
 end

@@ -1,4 +1,4 @@
-function [dataBin] = freehandSegmentation(dataIn, imAtt)
+function [dataBin] = freehandSegmentation(dataIn, imAtt, colours)
 %           FREEHAND SEGMENTATION FUNCTION
 % Do manual segmentation on images to obtain ground truth data.
 % 
@@ -67,6 +67,15 @@ if nargin == 1
     end
 end
 
+if nargin == 3 
+    cmap = colours;
+else
+    % Default 
+    cmap=jet;
+    cmap(1,:)=0;
+end
+    
+
 % deal with Warinings.
 set(0,'recursionlimit',750);
 
@@ -89,8 +98,7 @@ for i=1:numImages
         grayImage = dataIn(:,:,j,i);
         
         imagesc(grayImage);
-        colormap gray
-        jet2=jet;jet2(1,:)=0;colormap(jet2);
+        colormap(cmap);
         axis on;
         
         str = strcat('Original Grayscale Image: ',num2str(i), ...
