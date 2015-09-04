@@ -20,18 +20,19 @@ labels = unique(dataL);
 labels(1) = [];
 
 [n, m] = size(dataL);
-patches = zeros(n, m, length(labels));
+L = length(labels);
+patches = zeros(n, m, L);
 patch = zeros(n,m);
 
-Wi = zeros(1,length(labels));
-He = zeros(1,length(labels));
+Wi = zeros(1,L);
+He = zeros(1,L);
 
-for i=1:length(labels)
+for i=1:L
     
     structBoundaries = bwboundaries(dataL==i);
     xy = structBoundaries{1};
-    x = xy(:,1);
-    y = xy(:,2);
+    x = xy(:,2);
+    y = xy(:,1);
     
     leftColumn = min(x);
     rightColumn = max(x);
@@ -45,9 +46,13 @@ for i=1:length(labels)
              [leftColumn, topLine, Wi(i), He(i)]);
     patch(1:He(i)+1, 1:Wi(i)+1) = croppedImage;
     patches(:,:,i) = patch;
-
+    patch(patch~=0) = 0;
 end
-maxWidth = max(Wi);
-maxHeight = max(He);
+maxWidth = max(Wi)+1;
+maxHeight = max(He)+1;
 
-cellStructure = patches;
+cellStructure = zeros(maxHeight,maxWidth,L);
+for i=1:L
+    cellStructure(1:He(i)+1,1:Wi(i)+1,i) = ...
+        patches(1:He(i)+1,1:Wi(i)+1, i);
+end
