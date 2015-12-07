@@ -1,13 +1,14 @@
-function writeOutput(dataOut, outAttributes, rangeW)
+function writeOutput(dataOut, outAttributes, options)
 %               WRITE OUTPUT
 % Write the output of the manual segmentation into tiff files. 
 %
 
 if nargin < 3
-    rangeW = 1:outAttributes.numImages;
+    options.outname = 'man';
+    options.rangeW = 1:outAttributes.numImages;1
 end
 
-if length(rangeW)<outAttributes.numImages
+if length(options.rangeW)<outAttributes.numImages
     disp('Range must be of lenght = attributes.numImages, i.e: ');
     disp(outAttributes.numImages);
     return;
@@ -29,14 +30,32 @@ if isempty(dir(folderName))
 end
 
 for i=1:outAttributes.numImages
-    tiffstr = strcat(folderName, 'man',num2str(i),'.tif');
+    
+    if i < 11
+        tiffstr = strcat(folderName, options.outname, ...
+            '00',num2str(i-1),'.tif');
+    elseif i<101
+        tiffstr = strcat(folderName, options.outname , ...
+            '0', num2str(i-1),'.tif');
+    else
+        tiffstr = strcat(folderName, options.outname , ...
+            num2str(i-1),'.tif');
+    end
+    
+    %tiffstr = strcat(folderName, options.outname ,num2str(i),'.tif');
     if outAttributes.isRGB == false
         for j=1:outAttributes.Depth
-            ui16image = uint16(dataOut(:,:,j,i));
-            if i==1
-                imwrite(ui16image(:,:,j),tiffstr);
+%            try 
+                ui16image = uint16(dataOut(:,:,j,i));
+%             catch e
+%                 disp('oops');
+%             end
+            if j==1
+                %imwrite(ui16image(:,:,j),tiffstr);
+                imwrite(ui16image,tiffstr);
             else
-                imwrite(ui16image(:,:,j),tiffstr,...
+                %imwrite(ui16image(:,:,j),tiffstr,...
+                imwrite(ui16image,tiffstr,...
                     'WriteMode','append');
             end
             
