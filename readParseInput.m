@@ -1,7 +1,37 @@
 function [dataIn,attributes]=readParseInput(baseFileName)
 %                   READ AND PARSE INPUT
 %
-% Parse input from filder, or have it chosen by the user with a GUI.
+% Parse input from folder, or have it chosen by the user with a GUI.
+% INPUT:
+%               baseFileName := (String) Full path to where the dataset or
+%                              image is. If folder, then the entire dataset 
+%                               is loaded into memory, otherwise just the 
+%                               file referenced is read.
+%
+% OUTPUT:
+%                    dataIn := (matrix) 4D matrix of size: Height, Width,
+%                               Depth and numFrames. Attributes of image
+%                               (or dataset) are stored in attributes
+%                               structure. 
+%                attributes := (Struct) Structure with following fields:
+%
+%                   attributes.fileName := (string) full path to folder or 
+%                              file.
+%                   attributes.isDir := (boolean) True if folder, false if
+%                              single image.
+%                   attributes.Height := (int) Height (rows) of the image(s).
+%                   attributes.Width := (int) Width (columns) of the
+%                              image(s).
+%                   attributes.Depth := (int) Either Z-axis or RGB values
+%                              of image(s).
+%                   attributes.isRGB := (boolean) true if image is RGB.
+%                   attributes.numImages := (int) number of frames in
+%                               dataset.
+%
+% Code part of the matlab.manualSegmentation git repository, licensed under
+% the GNU General Public License v3. Found at: 
+% 
+%       <https://github.com/alonsoJASL/matlab.manualSegmentation.git> 
 %
 
 switch nargin
