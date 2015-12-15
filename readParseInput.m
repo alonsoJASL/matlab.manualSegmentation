@@ -78,18 +78,19 @@ switch nargin
         
     case 1
         if isdir(baseFileName)
-            dirlist = dir(baseFileName);
+            
+            dirlist = dir(strcat(baseFileName,'*.tif'));
             filenames = {dirlist.name};
-            filenames(1:2) = []; % Remove '.' and '..' from the list.
-            
-            if strcmp(filenames{1},'.DS_Store')
-                filenames(1) = [];
-            end
-            
+%             filenames(1:2) = []; % Remove '.' and '..' from the list.
+%             
+%             if strcmp(filenames{1},'.DS_Store')
+%                 filenames(1) = [];
+%             end
+%             
             N = length(filenames);
             
             if N>0
-                II = imfinfo(strcat(baseFileName,'/', filenames{end-1}));
+                II = imfinfo(strcat(baseFileName,'/', filenames{end}));
                 
                 if strcmp(II(1).ColorType,'truecolor')
                     dataIn = zeros(II(1).Height, II(1).Width, 3,N);
