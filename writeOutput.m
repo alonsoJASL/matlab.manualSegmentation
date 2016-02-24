@@ -5,7 +5,7 @@ function writeOutput(dataOut, outAttributes, options)
 
 if nargin < 3
     options.outname = 'man';
-    options.rangeW = 1:outAttributes.numImages;1
+    options.rangeW = 1:outAttributes.numImages;
 end
 
 if length(options.rangeW)<outAttributes.numImages
