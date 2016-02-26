@@ -24,7 +24,7 @@
 
 # Image files #
 ###############
-*.tiff
+*.tif
 *.png
 *.jpg
 *.jpeg
