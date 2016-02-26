@@ -21,3 +21,12 @@
 *.exe
 *.o
 *.so
+
+# Image files #
+###############
+*.tiff
+*.png
+*.jpg
+*.jpeg
+
+
