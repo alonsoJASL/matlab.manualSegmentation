@@ -120,8 +120,7 @@ switch nargin
                         'Width',II(1).Width, 'Depth', size(II,1),...
                         'isRGB', false,'numImages',N);
                 end
-                
-
+                dataIn = double(dataIn)./max(double(dataIn(:)));
                 
             else 
                 errorMessage = ...
@@ -161,6 +160,7 @@ switch nargin
                     dataIn(:,:,j) = imread(baseFileName,j);
                 end
             end
+            dataIn = double(dataIn)./max(double(dataIn(:)));
             
             if strcmp(II(1).ColorType,'truecolor')
                 attributes = struct('fileName', baseFileName,...
