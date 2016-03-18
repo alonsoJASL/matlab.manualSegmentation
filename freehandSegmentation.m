@@ -4,8 +4,9 @@ function [dataBin, binAtt] = freehandSegmentation(dataIn, imAtt, colours)
 % 
 % usage:
 %
-%            [dataBin] = freehandSegmentation(dataIn)
-%            [dataBin] = freehandSegmentation(dataIn, imAtt)
+%            [dataBin] = freehandSegmentation(dataIn);
+%            [dataBin] = freehandSegmentation(dataIn, imAtt);
+%    [dataBin, binAtt] = freehandSegmentation([], imAtt);
 %
 % INPUT:
 %           dataIn := matrix (2, 3 or 4D) that contains the images.
@@ -19,6 +20,7 @@ function [dataBin, binAtt] = freehandSegmentation(dataIn, imAtt, colours)
 %                     input parameters.
 %            imAtt := structure that specifies image attributes. Should
 %                     contain:
+%                       - fileName -> path to folder or filename.
 %                       - Height  |
 %                       - Width   |-> Dimensions of images
 %                       - Depth   |
@@ -32,54 +34,71 @@ function [dataBin, binAtt] = freehandSegmentation(dataIn, imAtt, colours)
 global KEY_IS_PRESSED;
 KEY_IS_PRESSED = 0;
 
-if nargin == 1
-    switch ndims(dataIn)
-        case 2
-            [imAtt.Height, imAtt.Width] = size(dataIn);
-            imAtt.Depth = 1;
-            imAtt.numImages = 1;
-        case 3
-             button = questdlg('What are we going to be dealing with?',...
-            'Select Input Type','Multiple 2D images','Single 3D image',...
-            'Cancel','Cancel');
-            switch button
-                case 'Multiple 2D images'
-                    imAtt.Height = size(dataIn,1);
-                    imAtt.Width = size(dataIn,2);
-                    imAtt.Depth = 1;
-                    imAtt.numImages = size(dataIn,3);
-                    dataIn = reshape(dataIn, imAtt.Height, imAtt.Width,...
-                        1, imAtt.numImages);
-                case 'Single 3D image'                 
-                    [imAtt.Height, imAtt.Width, imAtt.Depth] = size(dataIn);
-                    imAtt.numImages = 1;
-                otherwise
-                    disp('You canceled the operations');
-                    dataBin = [];
-            end
-        case 4
-            [imAtt.Height, imAtt.Width, imAtt.Depth, imAtt.numImages] = ...
-                size(dataIn);
-        otherwise
-            disp('Error. Wrong dimensions of input data.');
+% Default colour map 
+cmap=jet;
+cmap(1,:)=0;
+
+switch nargin
+    case 1
+        if isempty(dataIn)
+            % Working with full dataset one image at the time.
+            disp('Error. No input image or attributes specified.');
+            help freehandSegmentation ;
             dataBin = [];
             return;
-    end
+        else
+            switch ndims(dataIn)
+                case 2
+                    [imAtt.Height, imAtt.Width] = size(dataIn);
+                    imAtt.Depth = 1;
+                    imAtt.numImages = 1;
+                case 3
+                    button = questdlg('What are we going to be dealing with?',...
+                        'Select Input Type','Multiple 2D images','Single 3D image',...
+                        'Cancel','Cancel');
+                    switch button
+                        case 'Multiple 2D images'
+                            imAtt.Height = size(dataIn,1);
+                            imAtt.Widtoutputfolfderh = size(dataIn,2);
+                            imAtt.Depth = 1;
+                            imAtt.numImages = size(dataIn,3);
+                            dataIn = reshape(dataIn, imAtt.Height, imAtt.Width,...
+                                1, imAtt.numImages);
+                        case 'Single 3D image'
+                            [imAtt.Height, imAtt.Width, imAtt.Depth] = size(dataIn);
+                            imAtt.numImages = 1;
+                        otherwise
+                            disp('You canceled the operations');
+                            dataBin = [];
+                    end
+                case 4
+                    [imAtt.Height, imAtt.Width, imAtt.Depth, imAtt.numImages] = ...
+                        size(dataIn);
+                otherwise
+                    disp('Error. Wrong dimensions of input data.');
+                    dataBin = [];
+                    return;
+            end
+        end
+    case 2
+        % Get full dataset details.
+        [~,imAtt] = readDatasetDetails(imAtt(1).fileName);
+    case 3
+        % Get full dataset details.
+        [~,imAtt] = readDatasetDetails(imAtt(1).fileName);
+        cmap = colours;
+    otherwise
+        % Working with full dataset one image at the time.
+        disp('Error. Wrong input arguments.');
+        help freehandSegmentation ;
+        dataBin = [];
+        return;
 end
-
-if nargin == 3 
-    cmap = colours;
-else
-    % Default 
-    cmap=jet;
-    cmap(1,:)=0;
-end
-    
 
 % deal with Warinings.
 set(0,'recursionlimit',750);
 
-numImages = imAtt.numImages;
+numImages = imAtt(1).numImages;
 if numImages > 3
     str = strcat('How many images do you want to segment? [Default=',...
         num2str(numImages),']: ');
@@ -87,122 +106,255 @@ if numImages > 3
     
     if ~isempty(a)
         numImages = a;
+        imAtt = imAtt(1:a);
     end
 end
 
-dataBin = zeros(imAtt.Height, imAtt.Width, imAtt.Depth, numImages);
-binaryImageSum = zeros(size(dataIn(:,:,1,1)));
+bigDataset = isempty(dataIn);
 
-overlappingDataset = 0;
+if bigDataset == true
+    dataBin = zeros(imAtt(1).Height, imAtt(1).Width, imAtt(1).Depth, 1);
+    binaryImageSum = zeros(imAtt(1).Height, imAtt(1).Width);
 
-for i=1:numImages
-    for j=1:imAtt.Depth
-        grayImage = dataIn(:,:,j,i);
-        
-        imagesc(grayImage);
-        colormap(cmap);
-        axis on;
-        
-        str = strcat('Original Grayscale Image: ',num2str(i), ...
-            ' Layer: ', num2str(j));
-        title(str , 'FontSize', 18);
-        set(gcf, 'Position', get(0,'Screensize')); % Maximize figure.
-        set(gcf, 'KeyPressFcn', @myKeyPressFcn); % Get key press for ending.
-        
-        numCells = 0;
+    overlappingDataset = 0;
+    
+    outputfolder = strcat(imAtt(1).fileName(1:end-1), '_GT/');
+    if ~isdir(outputfolder)
+        mkdir(outputfolder)
+    end
 
-        if i==1 && j==1
-            message = sprintf(['Left click and hold to begin drawing.' ...
-                '\nSimply press any key before you do the last cell.']);
-            uiwait(msgbox(message));
-        end
+    for i=1:numImages
+        [dataIn] = readParseInput(strcat(imAtt(1).fileName,imAtt(i).names));
+        outputname = strcat(imAtt(i).names(1:end-4),'.mat');
         
-        %for k=1:10 % ONLY FOR DEBUGGING CODE
-        while ~KEY_IS_PRESSED               
-            hFH = imfreehand();
-            % Create a binary image ("mask") from the ROI object.
-            %xy = hFH.getPosition;
-            newCell = hFH.createMask();
+        for j=1:imAtt(i).Depth
+            grayImage = dataIn(:,:,j);
             
-            if overlappingDataset == 0 
-                testOverlapping = bitand(binaryImageSum, newCell);
-            else
-                aux = changeOverlapRepresentation(binaryImageSum);
-                aux = aux>0;
-                testOverlapping = bitand(aux, newCell);
+            imagesc(grayImage);
+            colormap(cmap);
+            axis on;
+            
+            str = strcat('Original Grayscale Image: ',num2str(i), ...
+                ' Layer: ', num2str(j));
+            title(str , 'FontSize', 18);
+            set(gcf, 'Position', get(0,'Screensize')); % Maximize figure.
+            set(gcf, 'KeyPressFcn', @myKeyPressFcn); % Get key press for ending.
+            
+            numCells = 0;
+            
+            if i==1 && j==1
+                message = sprintf(['Left click and hold to begin drawing.' ...
+                    '\nSimply press any key before you do the last cell.']);
+                uiwait(msgbox(message));
             end
             
-            if sum(testOverlapping(:)) > 0
-                % A wild overlapping cell just appeared!
+            %for k=1:10 % ONLY FOR DEBUGGING CODE
+            while ~KEY_IS_PRESSED
+                hFH = imfreehand();
+                % Create a binary image ("mask") from the ROI object.
+                %xy = hFH.getPosition;
+                newCell = hFH.createMask();
+                
                 if overlappingDataset == 0
-                str = strcat('Overlapping of cells detected.', ...
-                    ' How should we deal with it?');
-                button = questdlg(str, 'Select Input Type',...
-                    'Yes, this is an overlapping dataset.',...
-                    'Oopsie! Must have done something wrong',...
-                    'Cancel','Cancel');
-                else 
-                    button = 'yes';
+                    testOverlapping = bitand(binaryImageSum, newCell);
+                else
+                    aux = changeOverlapRepresentation(binaryImageSum);
+                    aux = aux>0;
+                    testOverlapping = bitand(aux, newCell);
                 end
                 
-                switch button
-                    case {'Yes, this is an overlapping dataset.', 'yes'}
-                        % deal with it!
-                        overlappingDataset = 1;
-                        if size(binaryImageSum,3) > 1
-                           % We've already done the breaking up of the
-                           % cells into layers.
-                           lastLabel = unique(binaryImageSum);
-                           lastLabel = lastLabel(end);
-                           newCell = newCell.*getPrimes(lastLabel,1);
-                           binaryImageSum(:,:,end+1) = newCell;
-                           numCells = numCells+1;
-                        else
-                            % We have to break up the image into different
-                            % cell layers                           
-                            binaryImageSum = bwlabeln(binaryImageSum);
-                            binaryImageSum = ...
-                                changeGroundTruthLabels(binaryImageSum);
-                            [binaryImageSum] = ...
-                                changeOverlapRepresentation(binaryImageSum);
-                            binaryImageSum(:,:,end+1) = newCell;
-                            numCells = numCells+1;
-                        end
-                    otherwise
-                        overlappingDataset = 0;
-                        newCell = zeros(hFH.createMask());
+                if sum(testOverlapping(:)) > 0
+                    % A wild overlapping cell just appeared!
+                    if overlappingDataset == 0
+                        str = strcat('Overlapping of cells detected.', ...
+                            ' How should we deal with it?');
+                        button = questdlg(str, 'Select Input Type',...
+                            'Yes, this is an overlapping dataset.',...
+                            'Oopsie! Must have done something wrong',...
+                            'Cancel','Cancel');
+                    else
+                        button = 'yes';
+                    end
+                    
+                    switch button
+                        case {'Yes, this is an overlapping dataset.', 'yes'}
+                            % deal with it!
+                            overlappingDataset = 1;
+                            if size(binaryImageSum,3) > 1
+                                % We've already done the breaking up of the
+                                % cells into layers.
+                                lastLabel = unique(binaryImageSum);
+                                lastLabel = lastLabel(end);
+                                newCell = newCell.*getPrimes(lastLabel,1);
+                                binaryImageSum(:,:,end+1) = newCell;
+                                numCells = numCells+1;
+                            else
+                                % We have to break up the image into different
+                                % cell layers
+                                binaryImageSum = bwlabeln(binaryImageSum);
+                                binaryImageSum = ...
+                                    changeGroundTruthLabels(binaryImageSum);
+                                [binaryImageSum] = ...
+                                    changeOverlapRepresentation(binaryImageSum);
+                                binaryImageSum(:,:,end+1) = newCell;
+                                numCells = numCells+1;
+                            end
+                        otherwise
+                            overlappingDataset = 0;
+                            newCell = zeros(hFH.createMask());
+                    end
+                elseif overlappingDataset == 1
+                    % keep stacking the layers of cells!
+                    lastLabel = unique(binaryImageSum);
+                    lastLabel = lastLabel(end);
+                    newCell = newCell.*getPrimes(lastLabel,1);
+                    binaryImageSum(:,:,end+1) = newCell;
+                    numCells = numCells+1;
+                else
+                    % do nothing.
+                    binaryImageSum = bitor(binaryImageSum,newCell);
+                    numCells = numCells+1;
                 end
-            elseif overlappingDataset == 1
-                % keep stacking the layers of cells!
-                lastLabel = unique(binaryImageSum);
-                lastLabel = lastLabel(end);
-                newCell = newCell.*getPrimes(lastLabel,1);
-                binaryImageSum(:,:,end+1) = newCell;
-                numCells = numCells+1;
-            else
-                % do nothing.
-                binaryImageSum = bitor(binaryImageSum,newCell);
-                numCells = numCells+1;
             end
-         end
-        if overlappingDataset == 1
-            dataBin(:,:,j,i) = changeOverlapRepresentation(binaryImageSum);
-        else 
-            dataBin(:,:,j,i) = binaryImageSum;
+            
+            if overlappingDataset == 1
+                dataBin(:,:,j) = changeOverlapRepresentation(binaryImageSum);
+                save(strcat(outputfolder,outputname),'dataBin');
+            else
+                dataBin(:,:,j) = binaryImageSum;
+                save(strcat(outputfolder,outputname),'dataBin');
+            end
+            
+            
+            % reset binaryImage and everything else!
+            binaryImageSum = zeros(size(dataIn(:,:,1,1)));
+            clear newCell;
+            overlappingDataset = 0;
+            KEY_IS_PRESSED = 0;
+            close all;
         end
-        
-        % reset binaryImage and everything else!
-        binaryImageSum = zeros(size(dataIn(:,:,1,1)));
-        clear newCell;
-        overlappingDataset = 0;
-        KEY_IS_PRESSED = 0;
-        close all;
+    end
+    
+else
+    dataBin = zeros(imAtt(1).Height, imAtt(1).Width, imAtt(1).Depth, numImages);
+    binaryImageSum = zeros(imAtt(1).Height, imAtt(1).Width);
+
+    overlappingDataset = 0;
+
+    for i=1:numImages
+        for j=1:imAtt(i).Depth
+            grayImage = dataIn(:,:,j,i);
+            
+            imagesc(grayImage);
+            colormap(cmap);
+            axis on;
+            
+            str = strcat('Original Grayscale Image: ',num2str(i), ...
+                ' Layer: ', num2str(j));
+            title(str , 'FontSize', 18);
+            set(gcf, 'Position', get(0,'Screensize')); % Maximize figure.
+            set(gcf, 'KeyPressFcn', @myKeyPressFcn); % Get key press for ending.
+            
+            numCells = 0;
+            
+            if i==1 && j==1
+                message = sprintf(['Left click and hold to begin drawing.' ...
+                    '\nSimply press any key before you do the last cell.']);
+                uiwait(msgbox(message));
+            end
+            
+            %for k=1:10 % ONLY FOR DEBUGGING CODE
+            while ~KEY_IS_PRESSED
+                hFH = imfreehand();
+                % Create a binary image ("mask") from the ROI object.
+                %xy = hFH.getPosition;
+                newCell = hFH.createMask();
+                
+                if overlappingDataset == 0
+                    testOverlapping = bitand(binaryImageSum, newCell);
+                else
+                    aux = changeOverlapRepresentation(binaryImageSum);
+                    aux = aux>0;
+                    testOverlapping = bitand(aux, newCell);
+                end
+                
+                if sum(testOverlapping(:)) > 0
+                    % A wild overlapping cell just appeared!
+                    if overlappingDataset == 0
+                        str = strcat('Overlapping of cells detected.', ...
+                            ' How should we deal with it?');
+                        button = questdlg(str, 'Select Input Type',...
+                            'Yes, this is an overlapping dataset.',...
+                            'Oopsie! Must have done something wrong',...
+                            'Cancel','Cancel');
+                    else
+                        button = 'yes';
+                    end
+                    
+                    switch button
+                        case {'Yes, this is an overlapping dataset.', 'yes'}
+                            % deal with it!
+                            overlappingDataset = 1;
+                            if size(binaryImageSum,3) > 1
+                                % We've already done the breaking up of the
+                                % cells into layers.
+                                lastLabel = unique(binaryImageSum);
+                                lastLabel = lastLabel(end);
+                                newCell = newCell.*getPrimes(lastLabel,1);
+                                binaryImageSum(:,:,end+1) = newCell;
+                                numCells = numCells+1;
+                            else
+                                % We have to break up the image into different
+                                % cell layers
+                                binaryImageSum = bwlabeln(binaryImageSum);
+                                binaryImageSum = ...
+                                    changeGroundTruthLabels(binaryImageSum);
+                                [binaryImageSum] = ...
+                                    changeOverlapRepresentation(binaryImageSum);
+                                binaryImageSum(:,:,end+1) = newCell;
+                                numCells = numCells+1;
+                            end
+                        otherwise
+                            overlappingDataset = 0;
+                            newCell = zeros(hFH.createMask());
+                    end
+                elseif overlappingDataset == 1
+                    % keep stacking the layers of cells!
+                    lastLabel = unique(binaryImageSum);
+                    lastLabel = lastLabel(end);
+                    newCell = newCell.*getPrimes(lastLabel,1);
+                    binaryImageSum(:,:,end+1) = newCell;
+                    numCells = numCells+1;
+                else
+                    % do nothing.
+                    binaryImageSum = bitor(binaryImageSum,newCell);
+                    numCells = numCells+1;
+                end
+            end
+            
+            if overlappingDataset == 1
+                dataBin(:,:,j,i) = changeOverlapRepresentation(binaryImageSum);
+            else
+                dataBin(:,:,j,i) = binaryImageSum;
+            end
+            
+            % reset binaryImage and everything else!
+            binaryImageSum = zeros(size(dataIn(:,:,1,1)));
+            clear newCell;
+            overlappingDataset = 0;
+            KEY_IS_PRESSED = 0;
+            close all;
+        end
     end
 end
 
 if nargout > 1 
     binAtt = imAtt;
     binAtt.numCells = numCells;
+    if bigDataset == true
+        binAtt.outputfolder = outputfolder;
+        binAtt.outputname = outputname;
+    end
 end
 
 end
