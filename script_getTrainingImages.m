@@ -129,3 +129,10 @@ message = sprintf('Mean value within drawn area = %.3f\nNumber of pixels = %d\nA
 meanGL, numberOfPixels1, numberOfPixels2, perimeter, ...
 centroid(1), centroid(2), centerOfMass(1), centerOfMass(2));
 msgbox(message);
+
+%% Get training images from overlapping datasets.
+% 
+
+% Segment n(=10?) images
+
+[B, batt] = freehandSegmentation(

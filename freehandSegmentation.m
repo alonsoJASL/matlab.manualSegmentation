@@ -82,7 +82,9 @@ switch nargin
         end
     case 2
         % Get full dataset details.
-        [~,imAtt] = readDatasetDetails(imAtt(1).fileName);
+        if isempty(dataIn)
+            [~,imAtt] = readDatasetDetails(imAtt(1).fileName);
+        end
     case 3
         % Get full dataset details.
         [~,imAtt] = readDatasetDetails(imAtt(1).fileName);
@@ -99,14 +101,18 @@ end
 set(0,'recursionlimit',750);
 
 numImages = imAtt(1).numImages;
+defOverlapping = 0; % to test overlapping at the end of the code.
 if numImages > 3
-    str = strcat('How many images do you want to segment? [Default=',...
+    str = strcat('How many (random) images do you want to segment? [Default=',...
         num2str(numImages),']: ');
     a = input(str);
     
     if ~isempty(a)
         numImages = a;
-        imAtt = imAtt(1:a);
+        randomIndex = sort(randi(imAtt(1).numImages,a,1));
+        imAtt = imAtt(randomIndex);
+        disp('');
+        disp({imAtt.names});
     end
 end
 
@@ -119,20 +125,36 @@ if bigDataset == true
     overlappingDataset = 0;
     
     outputfolder = strcat(imAtt(1).fileName(1:end-1), '_GT/');
+    outputfolderAtt = strcat(outputfolder(1:end-1),'_mat_Ha/');
     if ~isdir(outputfolder)
         mkdir(outputfolder)
     end
-
+    if ~isdir(outputfolderAtt)
+        mkdir(outputfolderAtt);
+    end
+    
+    if imAtt(1).isRGB == true
+        numCells = zeros(3,numImages);
+    else 
+        numCells = zeros(imAtt(1).Depth, numImages);
+    end
+    
     for i=1:numImages
-        [dataIn] = readParseInput(strcat(imAtt(1).fileName,imAtt(i).names));
+        [dataIn, auxAtt] = readParseInput(strcat(imAtt(1).fileName,...
+            imAtt(i).names));
         outputname = strcat(imAtt(i).names(1:end-4),'.mat');
         
-        for j=1:imAtt(i).Depth
+        for j=1:auxAtt.Depth
             grayImage = dataIn(:,:,j);
             
-            imagesc(grayImage);
-            colormap(cmap);
-            axis on;
+            if imAtt(1).isRGB == 0
+                imagesc(grayImage);
+                colormap(cmap);
+                axis on;
+            else 
+                imshow(dataIn);
+                axis on;
+            end
             
             str = strcat('Original Grayscale Image: ',num2str(i), ...
                 ' Layer: ', num2str(j));
@@ -140,7 +162,7 @@ if bigDataset == true
             set(gcf, 'Position', get(0,'Screensize')); % Maximize figure.
             set(gcf, 'KeyPressFcn', @myKeyPressFcn); % Get key press for ending.
             
-            numCells = 0;
+           
             
             if i==1 && j==1
                 message = sprintf(['Left click and hold to begin drawing.' ...
@@ -148,7 +170,7 @@ if bigDataset == true
                 uiwait(msgbox(message));
             end
             
-            %for k=1:10 % ONLY FOR DEBUGGING CODE
+            %for k=1:5 % ONLY FOR DEBUGGING CODE
             while ~KEY_IS_PRESSED
                 hFH = imfreehand();
                 % Create a binary image ("mask") from the ROI object.
@@ -165,6 +187,7 @@ if bigDataset == true
                 
                 if sum(testOverlapping(:)) > 0
                     % A wild overlapping cell just appeared!
+                    defOverlapping = true;
                     if overlappingDataset == 0
                         str = strcat('Overlapping of cells detected.', ...
                             ' How should we deal with it?');
@@ -187,7 +210,7 @@ if bigDataset == true
                                 lastLabel = lastLabel(end);
                                 newCell = newCell.*getPrimes(lastLabel,1);
                                 binaryImageSum(:,:,end+1) = newCell;
-                                numCells = numCells+1;
+                                numCells(j,i) = numCells(j,i)+1;
                             else
                                 % We have to break up the image into different
                                 % cell layers
@@ -197,7 +220,7 @@ if bigDataset == true
                                 [binaryImageSum] = ...
                                     changeOverlapRepresentation(binaryImageSum);
                                 binaryImageSum(:,:,end+1) = newCell;
-                                numCells = numCells+1;
+                                numCells(j,i) = numCells(j,i)+1;
                             end
                         otherwise
                             overlappingDataset = 0;
@@ -209,11 +232,11 @@ if bigDataset == true
                     lastLabel = lastLabel(end);
                     newCell = newCell.*getPrimes(lastLabel,1);
                     binaryImageSum(:,:,end+1) = newCell;
-                    numCells = numCells+1;
+                    numCells(j,i) = numCells(j,i)+1;
                 else
                     % do nothing.
                     binaryImageSum = bitor(binaryImageSum,newCell);
-                    numCells = numCells+1;
+                    numCells(j,i) = numCells(j,i)+1;
                 end
             end
             
@@ -236,13 +259,14 @@ if bigDataset == true
     end
     
 else
-    dataBin = zeros(imAtt(1).Height, imAtt(1).Width, imAtt(1).Depth, numImages);
-    binaryImageSum = zeros(imAtt(1).Height, imAtt(1).Width);
+    dataBin = zeros(imAtt.Height, imAtt.Width, imAtt.Depth, numImages);
+    binaryImageSum = zeros(imAtt.Height, imAtt.Width);
 
     overlappingDataset = 0;
-
+    numCells = zeros(imAtt.Depth,numImages);
+    
     for i=1:numImages
-        for j=1:imAtt(i).Depth
+        for j=1:imAtt.Depth
             grayImage = dataIn(:,:,j,i);
             
             imagesc(grayImage);
@@ -254,9 +278,7 @@ else
             title(str , 'FontSize', 18);
             set(gcf, 'Position', get(0,'Screensize')); % Maximize figure.
             set(gcf, 'KeyPressFcn', @myKeyPressFcn); % Get key press for ending.
-            
-            numCells = 0;
-            
+                        
             if i==1 && j==1
                 message = sprintf(['Left click and hold to begin drawing.' ...
                     '\nSimply press any key before you do the last cell.']);
@@ -280,6 +302,7 @@ else
                 
                 if sum(testOverlapping(:)) > 0
                     % A wild overlapping cell just appeared!
+                    defOverlapping = true;
                     if overlappingDataset == 0
                         str = strcat('Overlapping of cells detected.', ...
                             ' How should we deal with it?');
@@ -302,7 +325,7 @@ else
                                 lastLabel = lastLabel(end);
                                 newCell = newCell.*getPrimes(lastLabel,1);
                                 binaryImageSum(:,:,end+1) = newCell;
-                                numCells = numCells+1;
+                                numCells(j,i) = numCells(j,i)+1;
                             else
                                 % We have to break up the image into different
                                 % cell layers
@@ -312,7 +335,7 @@ else
                                 [binaryImageSum] = ...
                                     changeOverlapRepresentation(binaryImageSum);
                                 binaryImageSum(:,:,end+1) = newCell;
-                                numCells = numCells+1;
+                                numCells(j,i) = numCells(j,i)+1;
                             end
                         otherwise
                             overlappingDataset = 0;
@@ -324,11 +347,11 @@ else
                     lastLabel = lastLabel(end);
                     newCell = newCell.*getPrimes(lastLabel,1);
                     binaryImageSum(:,:,end+1) = newCell;
-                    numCells = numCells+1;
+                    numCells(j,i) = numCells(j,i)+1;
                 else
                     % do nothing.
                     binaryImageSum = bitor(binaryImageSum,newCell);
-                    numCells = numCells+1;
+                    numCells(j,i) = numCells(j,i)+1;
                 end
             end
             
@@ -349,12 +372,29 @@ else
 end
 
 if nargout > 1 
-    binAtt = imAtt;
+    binAtt = imAtt(1);
+    binAtt.names = [];
     binAtt.numCells = numCells;
+    if defOverlapping == 1
+        binAtt.overlap = true;
+        binAtt.overlaptype = 'primes';
+        
+        labelsGT = unique(dataBin);
+        overlapindx = find(~isprime(labelsGT));
+        overlapindx(1) = [];
+
+        binAtt.overlapindx = overlapindx;
+        overlaplabels = labelsGT(overlapindx);
+        binAtt.overlaplabels = overlaplabels;
+    end
     if bigDataset == true
         binAtt.outputfolder = outputfolder;
         binAtt.outputname = outputname;
+        if ~isempty(a)
+            binAtt.names = randomIndex;
+        end
     end
+    save(strcat(outputfolderAtt,'handles.mat'), 'binAtt');
 end
 
 end
@@ -373,7 +413,6 @@ if nargin < 2
 end
 
 N=fix(N);
-
 
 if nextPrime == 0
     idx = 10;

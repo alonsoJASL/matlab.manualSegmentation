@@ -81,12 +81,7 @@ switch nargin
             
             dirlist = dir(strcat(baseFileName,'*.tif'));
             filenames = {dirlist.name};
-%             filenames(1:2) = []; % Remove '.' and '..' from the list.
-%             
-%             if strcmp(filenames{1},'.DS_Store')
-%                 filenames(1) = [];
-%             end
-%             
+      
             N = length(filenames);
             
             if N>0

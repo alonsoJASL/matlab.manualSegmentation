@@ -1,4 +1,4 @@
-function [dataExample,attributes]=readParseInput(baseFileName)
+function [dataExample,attributes]=readDatasetDetails(baseFileName)
 %                   READ AND PARSE INPUT
 %
 % Parse input from folder, or have it chosen by the user with a GUI.

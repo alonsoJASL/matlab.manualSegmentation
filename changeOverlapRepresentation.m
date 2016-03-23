@@ -22,7 +22,7 @@ function [newGT, newAtt] = changeOverlapRepresentation(groundTruth,att)
 %                           - att.overlaptype := either 'primes' or
 %                             'levels'.
 %                           - att.overlaplevels
-%                           
+%
 % OUTPUT:
 %               newGT := New segmented image in the alternate form of
 %                        representation.
@@ -38,7 +38,7 @@ if nargin < 2
     att.Height = sizeGT(1);
     att.Width = sizeGT(2);
     att.Depth = size(groundTruth, 3);
-    
+
     att.overlap = true;
     if att.Depth > 1
         att.overlaptype = 'levels';
@@ -49,10 +49,10 @@ if nargin < 2
         labelsGT = unique(groundTruth);
         overlapindx = find(~isprime(labelsGT));
         overlapindx(1) = [];
-        
-        att.overlapindx = overlapindx;  
+
+        att.overlapindx = overlapindx;
         overlaplabels = labelsGT(overlapindx);
-        att.overlaplabels = overlaplabels;  
+        att.overlaplabels = overlaplabels;
     end
     att.overlaplevels = att.Depth;
 else % two arguments sent: gt image and attributes structure.
@@ -72,15 +72,15 @@ switch att.overlaptype
         labelsOnImage = unique(groundTruth);
         labelsOnImage(1) = [];
         indxNotPrime = find(~isprime(labelsOnImage));
-        
+
         actualLabels = [];
         for i=1:length(labelsOnImage)
             actualLabels = [actualLabels factor(labelsOnImage(i))];
         end
         actualLabels = unique(actualLabels);
-        
+
         outputLayers = zeros(att.Height, att.Width, length(actualLabels));
-          
+
         for i=1:length(labelsOnImage)
             if isprime(labelsOnImage(i))
                 indx = find(actualLabels==labelsOnImage(i));
@@ -97,9 +97,9 @@ switch att.overlaptype
                 end
             end
         end
-        
+
         newGT = outputLayers;
-        
+
         if nargout>1
             newAtt = att;
             newAtt.Depth = size(newGT,3);
@@ -107,45 +107,45 @@ switch att.overlaptype
             newAtt.overlaptype = 'levels';
             newAtt.overlapindx = [];
             newAtt.labels = actualLabels;
-            
+
         end
-        
+
     case {'levels', 'level'}
         % From layered ground truth to prime-based ground truth.
         groundTruth = -1.*groundTruth;
         groundTruth(groundTruth==0) = 1;
-       
+
         newLabels = primes(1000);
         labels = unique(groundTruth);
         newLabels = [newLabels(1:length(labels))];
         newLabels(end) = 1;
         newLabels = newLabels';
-        
+
         for indx=1:length(labels)
             groundTruth(groundTruth==labels(indx)) = newLabels(indx);
         end
-        
+
         newGT = prod(groundTruth,3);
         newGT(newGT==1) = 0;
         newLabels(end) = [];
-        
-        if nargout > 1 
+
+        if nargout > 1
             labelsGT = unique(newGT);
-            
+
             newAtt = att;
             newAtt.Depth = size(newGT,3);
             newAtt.overlaplevels = 1;
             newAtt.overlaptype = 'primes';
             newAtt.overlapindx = find(~isprime(labelsGT));
-            
+
             newAtt.labels = newLabels;
-            
+
             newAtt.overlapindx(1) = [];
-            
+
             newAtt.overplaplabels = labelsGT(newAtt.overlapindx);
         end
-            
-        
+
+
     otherwise
         disp('ERROR. Found atributes.overlaptype, but options do not match.');
         disp('Try again. Available options are: "LEVELS" or "PRIMES".');
