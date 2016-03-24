@@ -108,11 +108,19 @@ if numImages > 3
     a = input(str);
     
     if ~isempty(a)
-        numImages = a;
-        randomIndex = sort(randi(imAtt(1).numImages,a,1));
-        imAtt = imAtt(randomIndex);
-        disp('');
-        disp({imAtt.names});
+        if length(a)>1
+            numImages = length(a);
+            randomIndex = sort(a);
+            imAtt = imAtt(randomIndex);
+            disp('Segmenting the following images:');
+            disp({imAtt.names});
+        else
+            numImages = a;
+            randomIndex = sort(randi(imAtt(1).numImages,a,1));
+            imAtt = imAtt(randomIndex);
+            disp('Segmenting the following images:');
+            disp({imAtt.names});
+        end
     end
 end
 
@@ -389,7 +397,7 @@ if nargout > 1
     end
     if bigDataset == true
         binAtt.outputfolder = outputfolder;
-        binAtt.outputname = outputname;
+        binAtt.handles = outputfolderAtt;
         if ~isempty(a)
             binAtt.names = randomIndex;
         end
