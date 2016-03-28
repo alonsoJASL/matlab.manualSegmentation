@@ -277,9 +277,14 @@ else
         for j=1:imAtt.Depth
             grayImage = dataIn(:,:,j,i);
             
-            imagesc(grayImage);
-            colormap(cmap);
-            axis on;
+            if imAtt.isRGB == 0
+                imagesc(grayImage);
+                colormap(cmap);
+                axis on;
+            else 
+                imshow(dataIn);
+                axis on;
+            end
             
             str = strcat('Original Grayscale Image: ',num2str(i), ...
                 ' Layer: ', num2str(j));
