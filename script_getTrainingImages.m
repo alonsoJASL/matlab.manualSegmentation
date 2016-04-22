@@ -15,15 +15,15 @@ fontSize = 16;
 % Read in a standard MATLAB gray scale demo image.
 fontSize = 18;
 fileName = strcat('/media/jsolisl/DATA/ISBI_CELLTRACKING/',...
-    '2013/TRAINING/N2DH-GOWT1/01');
+    '2013/TRAINING/N2DH-GOWT1/01/t00.tif');
 bileName = strcat('/media/jsolisl/DATA/ISBI_CELLTRACKING/',...
-    '2013/TRAINING/N2DH-GOWT1/01_GTruth' );
+    '2013/TRAINING/N2DH-GOWT1/01_GT/TRA/man_track00.tif' );
 [X, att] = readParseInput(fileName);
 [dBin, ~] = readParseInput(bileName);
 
 grayImage = X(:,:,:,1);
 binImage = dBin(:,:,:,1);
-
+%
 imagesc(grayImage);
 axis on;
 title('Original Grayscale Image', 'FontSize', fontSize);
@@ -134,5 +134,3 @@ msgbox(message);
 % 
 
 % Segment n(=10?) images
-
-[B, batt] = freehandSegmentation(
