@@ -134,6 +134,7 @@ if bigDataset == true
     
     outputfolder = strcat(imAtt(1).fileName(1:end-1), '_GT/');
     outputfolderAtt = strcat(outputfolder(1:end-1),'_mat_Ha/');
+    
     if ~isdir(outputfolder)
         mkdir(outputfolder)
     end
@@ -407,7 +408,9 @@ if nargout > 1
             binAtt.names = randomIndex;
         end
     end
-    save(strcat(outputfolderAtt,'handles.mat'), 'binAtt');
+    if exist('outputfolderAtt')
+        save(strcat(outputfolderAtt,'handles.mat'), 'binAtt');
+    end
 end
 
 end

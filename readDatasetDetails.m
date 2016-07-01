@@ -2,6 +2,10 @@ function [dataExample,attributes]=readDatasetDetails(baseFileName)
 %                   READ AND PARSE INPUT
 %
 % Parse input from folder, or have it chosen by the user with a GUI.
+%
+%           [dataExample,attributes]=readDatasetDetails(baseFileName)
+%
+% 
 % INPUT:
 %               baseFileName := (String) Full path to where the dataset or
 %                              image is. Only one image from the dataset
