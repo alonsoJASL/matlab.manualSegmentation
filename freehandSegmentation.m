@@ -1,7 +1,7 @@
 function [dataBin, binAtt] = freehandSegmentation(dataIn, imAtt, colours)
 %           FREEHAND SEGMENTATION FUNCTION
 % Do manual segmentation on images to obtain ground truth data.
-% 
+%
 % usage:
 %
 %            [dataBin] = freehandSegmentation(dataIn);
@@ -10,7 +10,7 @@ function [dataBin, binAtt] = freehandSegmentation(dataIn, imAtt, colours)
 %
 % INPUT:
 %           dataIn := matrix (2, 3 or 4D) that contains the images.
-%                   The size of said matrices can be: 
+%                   The size of said matrices can be:
 %                       - [Heigh, Width, 1, 1] for 2D
 %                       - [Height, Width, 1, numImages] for multiple 2D
 %                       - [Height, Width, Depth] for single 3D
@@ -30,11 +30,11 @@ function [dataBin, binAtt] = freehandSegmentation(dataIn, imAtt, colours)
 %           dataBin := binary image that resulted from the segmentation of
 %                   the images. It is such that:
 %               size(dataBin) = [Height, Width, Depth, numImages];
-% 
-global KEY_IS_PRESSED;
+%
+global KEY_IS_PRESSED WHICH_KEY;
 KEY_IS_PRESSED = 0;
-
-% Default colour map 
+WHICH_KEY = [];
+% Default colour map
 cmap=jet;
 cmap(1,:)=0;
 
@@ -74,6 +74,21 @@ switch nargin
                 case 4
                     [imAtt.Height, imAtt.Width, imAtt.Depth, imAtt.numImages] = ...
                         size(dataIn);
+                    button = questdlg('Are these multiple RGB images??',...
+                        'Select Input Type','Multiple RGBs!',...
+                        'No, just a single 3D',...
+                        'Cancel','Cancel');
+                    switch button
+                        case 'Multiple RGBs!'
+                            imAtt.numImages = size(dataIn,4);
+                            imAtt.isRGB = 1;
+                        case 'No, just a single 3D'
+                            imAtt.isRGB = 0;
+                        otherwise
+                            disp('You canceled the operations');
+                            dataBin = [];
+                            return;
+                    end
                 otherwise
                     disp('Error. Wrong dimensions of input data.');
                     dataBin = [];
@@ -102,7 +117,7 @@ set(0,'recursionlimit',750);
 
 numImages = imAtt(1).numImages;
 defOverlapping = 0; % to test overlapping at the end of the code.
-if numImages > 3
+if numImages > 5
     str = strcat('How many (random) images do you want to segment? [Default=',...
         num2str(numImages),']: ');
     a = input(str);
@@ -129,7 +144,7 @@ bigDataset = isempty(dataIn);
 if bigDataset == true
     dataBin = zeros(imAtt(1).Height, imAtt(1).Width, imAtt(1).Depth, 1);
     binaryImageSum = zeros(imAtt(1).Height, imAtt(1).Width);
-
+    
     overlappingDataset = 0;
     
     outputfolder = strcat(imAtt(1).fileName(1:end-1), '_GT/');
@@ -144,7 +159,7 @@ if bigDataset == true
     
     if imAtt(1).isRGB == true
         numCells = zeros(3,numImages);
-    else 
+    else
         numCells = zeros(imAtt(1).Depth, numImages);
     end
     
@@ -160,7 +175,7 @@ if bigDataset == true
                 imagesc(grayImage);
                 colormap(cmap);
                 axis on;
-            else 
+            else
                 imshow(dataIn);
                 axis on;
             end
@@ -171,7 +186,7 @@ if bigDataset == true
             set(gcf, 'Position', get(0,'Screensize')); % Maximize figure.
             set(gcf, 'KeyPressFcn', @myKeyPressFcn); % Get key press for ending.
             
-           
+            
             
             if i==1 && j==1
                 message = sprintf(['Left click and hold to begin drawing.' ...
@@ -181,6 +196,7 @@ if bigDataset == true
             
             %for k=1:5 % ONLY FOR DEBUGGING CODE
             while ~KEY_IS_PRESSED
+                
                 hFH = imfreehand();
                 % Create a binary image ("mask") from the ROI object.
                 %xy = hFH.getPosition;
@@ -270,7 +286,7 @@ if bigDataset == true
 else
     dataBin = zeros(imAtt.Height, imAtt.Width, imAtt.Depth, numImages);
     binaryImageSum = zeros(imAtt.Height, imAtt.Width);
-
+    
     overlappingDataset = 0;
     numCells = zeros(imAtt.Depth,numImages);
     
@@ -282,7 +298,10 @@ else
                 imagesc(grayImage);
                 colormap(cmap);
                 axis on;
-            else 
+            elseif imAtt.numImages > 1
+                imshow(dataIn(:,:,:,i));
+                axis on;
+            else
                 imshow(dataIn);
                 axis on;
             end
@@ -292,7 +311,7 @@ else
             title(str , 'FontSize', 18);
             set(gcf, 'Position', get(0,'Screensize')); % Maximize figure.
             set(gcf, 'KeyPressFcn', @myKeyPressFcn); % Get key press for ending.
-                        
+            
             if i==1 && j==1
                 message = sprintf(['Left click and hold to begin drawing.' ...
                     '\nSimply press any key before you do the last cell.']);
@@ -385,7 +404,7 @@ else
     end
 end
 
-if nargout > 1 
+if nargout > 1
     binAtt = imAtt(1);
     binAtt.names = [];
     binAtt.numCells = numCells;
@@ -396,7 +415,7 @@ if nargout > 1
         labelsGT = unique(dataBin);
         overlapindx = find(~isprime(labelsGT));
         overlapindx(1) = [];
-
+        
         binAtt.overlapindx = overlapindx;
         overlaplabels = labelsGT(overlapindx);
         binAtt.overlaplabels = overlaplabels;
@@ -416,11 +435,31 @@ end
 end
 
 function myKeyPressFcn(hObject, event)
-    global KEY_IS_PRESSED
-    KEY_IS_PRESSED  = 1;
-    message = ['Key pressed, segment your last cell or'...
-        '\nclick on any of the already segmented cells.'];
-    uiwait(msgbox(message));
+global KEY_IS_PRESSED WHICH_KEY;
+
+% message = ['Key pressed, segment your last cell or'...
+%     '\nclick on any of the already segmented cells.'];
+% uiwait(msgbox(message));
+
+button = questdlg('Key pressed, please indicate what to do:',...
+    'Select next action:','Undo...','Clear all (start over)',...
+    'Finished','Finished');
+switch button
+    case 'Undo'
+        WHICH_KEY = 'u';
+        KEY_IS_PRESSED  = 0;
+    case 'Clear all (start over)'
+        WHICH_KEY = 'c';
+        KEY_IS_PRESSED  = 0;
+    case 'Finished'
+        WHICH_KEY = 'f';
+        KEY_IS_PRESSED  = 1;
+    otherwise
+        disp('You canceled the operations');
+        KEY_IS_PRESSED  = 0;
+        WHICH_KEY = 'n'; % do 'n'othing
+end
+
 end
 
 function [n] = getPrimes(N,nextPrime)
@@ -456,6 +495,5 @@ else
 end
 end
 
-        
 
-    
+
