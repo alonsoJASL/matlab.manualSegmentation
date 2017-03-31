@@ -19,8 +19,12 @@ allFiles(1:2) = [];
 
 if nargin < 3
     returnwhich = 'random';
-else 
+elseif ischar(returnwhich) 
     returnwhich = lower(returnwhich);
+else
+    % it's an index!
+    indx = returnwhich;
+    returnwhich = 'index';
 end
 
 switch returnwhich
@@ -31,8 +35,10 @@ switch returnwhich
         imNames = allFiles(index).name;
     case 'one'
         imNames = allFiles(1).name;
+    case 'index'
+        imNames = allFiles(indx).name;
     otherwise 
-        disp('Wrong option. Use: all, random, or one.');
+        disp('Wrong option. Use: all, random, one, or specify the index (number).');
         disp('Returning all');
         imNames = {allFiles.name};
 end
