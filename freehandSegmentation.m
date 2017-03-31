@@ -283,7 +283,7 @@ else
                 colormap(cmap);
                 axis on;
             else 
-                imshow(dataIn);
+                imshow(dataIn(:,:,:,i));
                 axis on;
             end
             
