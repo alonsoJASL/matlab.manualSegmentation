@@ -136,7 +136,8 @@ switch nargin
                 return;
             end
             
-            II = imfinfo(baseFileName);
+            try 
+            II = imfinfo(baseFileName);                
             
             % We check if the image is read as an RGB. 
             if strcmp(II(1).ColorType,'truecolor')
@@ -171,6 +172,23 @@ switch nargin
                     'Width',II(1).Width, 'Depth', size(II,1),...
                     'isRGB', false, 'numImages',1);
             end
+            catch e 
+                if contains(e.identifier, 'whatFormat')
+                    currData = load(baseFileName);
+                    fn = fieldnames(currData);
+                    dataIn = currData.(fn{1});
+                    
+                    attributes.fileName = baseFileName;
+                    attributes.isDir = false;
+                    attributes.Height = size(dataIn, 1);
+                    attributes.Width = size(dataIn, 2);
+                    attributes.Depth = size(dataIn, 3);
+                    attributes.isRGB = size(dataIn,3) == 3;
+                    attributes.numImages = 1;
+                else
+                    fprintf('%s: ERROR, could not read file.\n', mfilename);
+                end
+                    
         end
         
 end

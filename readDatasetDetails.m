@@ -1,21 +1,20 @@
 function [dataExample,attributes]=readDatasetDetails(baseFileName)
-%                   READ AND PARSE INPUT
-%
-% Parse input from folder, or have it chosen by the user with a GUI.
+% readDatasetDetails is a function to parse input from folder, or have it
+% chosen by the user with a GUI.
 %
 %           [dataExample,attributes]=readDatasetDetails(baseFileName)
 %
-% 
+%
 % INPUT:
 %               baseFileName := (String) Full path to where the dataset or
 %                              image is. Only one image from the dataset
 %                              will be loaded into memory.
 %
 % OUTPUT:
-%               dataExample := (matrix) First frame of the dataset for tests. 
+%               dataExample := (matrix) First frame of the dataset for tests.
 %                attributes := (Struct) Structure with following fields:
 %
-%                   attributes.fileName := (string) full path to folder or 
+%                   attributes.fileName := (string) full path to folder or
 %                              file.
 %                   attributes.isDir := (boolean) True if folder, false if
 %                              single image.
@@ -29,9 +28,9 @@ function [dataExample,attributes]=readDatasetDetails(baseFileName)
 %                               dataset.
 %
 % Code part of the matlab.manualSegmentation git repository, licensed under
-% the GNU General Public License v3. Found at: 
-% 
-%       <https://github.com/alonsoJASL/matlab.manualSegmentation.git> 
+% the GNU General Public License v3. Found at:
+%
+%       <https://github.com/alonsoJASL/matlab.manualSegmentation.git>
 %
 
 switch nargin
@@ -51,13 +50,13 @@ switch nargin
         end
     case 1
         if isdir(baseFileName)
-            
-            dirlist = dir(strcat(baseFileName,'*.tif'));
+            dirlist = dir(fullfile(baseFileName,'*.tif'));
             filenames = {dirlist.name};
             
             N = length(filenames);
             
             if N>0
+                [auxatt] = getMatFolders(baseFileName);
                 II = imfinfo(strcat(baseFileName,'/', filenames{end}));
                 
                 if strcmp(II(1).ColorType,'truecolor')
@@ -87,6 +86,16 @@ switch nargin
                         'isRGB', false,'numImages',N, ...
                         'names', filenames);
                 end
+                
+                a = fieldnames(auxatt);
+                for ix=1:length(attributes)
+                    for jx=1:length(a)
+                        if ~isempty(auxatt.(a{jx}))
+                            attributes(ix).(a{jx}) = auxatt.(a{jx});
+                        end
+                    end
+                end
+                
                 dataExample = double(dataExample)./max(double(dataExample(:)));
                 
             else
@@ -106,4 +115,4 @@ switch nargin
         end
 end
 end
-            
+
