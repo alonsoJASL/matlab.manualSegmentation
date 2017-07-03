@@ -4,18 +4,18 @@ function [dataIn,attributes]=readParseInput(baseFileName)
 % Parse input from folder, or have it chosen by the user with a GUI.
 % INPUT:
 %               baseFileName := (String) Full path to where the dataset or
-%                              image is. If folder, then the entire dataset 
-%                               is loaded into memory, otherwise just the 
+%                              image is. If folder, then the entire dataset
+%                               is loaded into memory, otherwise just the
 %                               file referenced is read.
 %
 % OUTPUT:
 %                    dataIn := (matrix) 4D matrix of size: Height, Width,
 %                               Depth and numFrames. Attributes of image
 %                               (or dataset) are stored in attributes
-%                               structure. 
+%                               structure.
 %                attributes := (Struct) Structure with following fields:
 %
-%                   attributes.fileName := (string) full path to folder or 
+%                   attributes.fileName := (string) full path to folder or
 %                              file.
 %                   attributes.isDir := (boolean) True if folder, false if
 %                              single image.
@@ -29,9 +29,9 @@ function [dataIn,attributes]=readParseInput(baseFileName)
 %                               dataset.
 %
 % Code part of the matlab.manualSegmentation git repository, licensed under
-% the GNU General Public License v3. Found at: 
-% 
-%       <https://github.com/alonsoJASL/matlab.manualSegmentation.git> 
+% the GNU General Public License v3. Found at:
+%
+%       <https://github.com/alonsoJASL/matlab.manualSegmentation.git>
 %
 
 switch nargin
@@ -81,7 +81,7 @@ switch nargin
             
             dirlist = dir(strcat(baseFileName,'*.tif'));
             filenames = {dirlist.name};
-      
+            
             N = length(filenames);
             
             if N>0
@@ -117,7 +117,7 @@ switch nargin
                 end
                 dataIn = double(dataIn)./max(double(dataIn(:)));
                 
-            else 
+            else
                 errorMessage = ...
                     sprintf('Error: %s\n does not contain files.',...
                     baseFileName);
@@ -136,48 +136,61 @@ switch nargin
                 return;
             end
             
-            try 
-            II = imfinfo(baseFileName);                
-            
-            % We check if the image is read as an RGB. 
-            if strcmp(II(1).ColorType,'truecolor')
-                if size(II,1) > 1
-                    dataIn = zeros(II(1).Height, II(1).Width, ...
-                        3, size(II,1));
-                    for j=1:size(II,1)
-                        dataIn(:,:,:,j) = imread(baseFileName,j);
+            try
+                II = imfinfo(baseFileName);
+                
+                % We check if the image is read as an RGB.
+                if strcmp(II(1).ColorType,'truecolor')
+                    if size(II,1) > 1
+                        dataIn = zeros(II(1).Height, II(1).Width, ...
+                            3, size(II,1));
+                        for j=1:size(II,1)
+                            dataIn(:,:,:,j) = imread(baseFileName,j);
+                        end
+                    else
+                        dataIn = imread(baseFileName);
                     end
                 else
-                    dataIn = imread(baseFileName);
+                    dataIn = zeros(II(1).Height, II(1).Width, size(II,1));
+                    for j=1:size(II,1)
+                        dataIn(:,:,j) = imread(baseFileName,j);
+                    end
                 end
-            else
-                dataIn = zeros(II(1).Height, II(1).Width, size(II,1));
-                for j=1:size(II,1)
-                    dataIn(:,:,j) = imread(baseFileName,j);
+                dataIn = double(dataIn)./max(double(dataIn(:)));
+                
+                if strcmp(II(1).ColorType,'truecolor')
+                    attributes = struct('fileName', baseFileName,...
+                        'isDir', false, ...
+                        'Height', II(1).Height, ...
+                        'Width',II(1).Width, 'Depth', 3,...
+                        'isRGB', true, ...
+                        'numImages',size(II,1));
+                else
+                    attributes = struct('fileName', baseFileName,...
+                        'isDir', false, ...
+                        'Height', II(1).Height, ...
+                        'Width',II(1).Width, 'Depth', size(II,1),...
+                        'isRGB', false, 'numImages',1);
                 end
-            end
-            dataIn = double(dataIn)./max(double(dataIn(:)));
-            
-            if strcmp(II(1).ColorType,'truecolor')
-                attributes = struct('fileName', baseFileName,...
-                    'isDir', false, ...
-                    'Height', II(1).Height, ...
-                    'Width',II(1).Width, 'Depth', 3,...
-                    'isRGB', true, ...
-                    'numImages',size(II,1));
-            else
-                attributes = struct('fileName', baseFileName,...
-                    'isDir', false, ...
-                    'Height', II(1).Height, ...
-                    'Width',II(1).Width, 'Depth', size(II,1),...
-                    'isRGB', false, 'numImages',1);
-            end
-            catch e 
+            catch e
                 if contains(e.identifier, 'whatFormat')
                     currData = load(baseFileName);
                     fn = fieldnames(currData);
-                    dataIn = currData.(fn{1});
-                    
+                    % specific case for (dataG, dataL) pairs
+                    if length(fn)>1 && sum(contains(fn, 'data'))>0
+                        try
+                            r = currData.dataR;
+                            g = currData.dataG;
+                        catch e
+                            r = currdata.dataL;
+                            g = currData.dataG;
+                        end
+                        dataIn = cat(3, r,g,zeros(size(r)));
+                        
+                    else
+                        dataIn = currData.(fn{1});
+                        
+                    end
                     attributes.fileName = baseFileName;
                     attributes.isDir = false;
                     attributes.Height = size(dataIn, 1);
@@ -185,11 +198,12 @@ switch nargin
                     attributes.Depth = size(dataIn, 3);
                     attributes.isRGB = size(dataIn,3) == 3;
                     attributes.numImages = 1;
+                    
                 else
                     fprintf('%s: ERROR, could not read file.\n', mfilename);
                 end
-                    
+                
+            end
+            
         end
-        
-end
 end
