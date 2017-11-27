@@ -1,6 +1,10 @@
 function [imNames] = loadimages(dirname, dataset, returnwhich)
 % Pull one (random or the first) or all the images from a dataset.
 % works better with loadnames.m
+% 
+% USAGE: 
+%           [imNames] = loadimages(dirname, dataset, returnwhich)
+% 
 % This is useful for functions like readParseInput from the MANUAL
 % SEGMENTATION package. 
 %
@@ -37,6 +41,8 @@ switch returnwhich
         imNames = allFiles(1).name;
     case 'index'
         imNames = allFiles(indx).name;
+    case 'last'
+        imNames = allFiles(end).name;
     otherwise 
         disp('Wrong option. Use: all, random, one, or specify the index (number).');
         disp('Returning all');
