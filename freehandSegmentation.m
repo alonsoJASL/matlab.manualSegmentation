@@ -284,22 +284,22 @@ if bigDataset == true
     end
 
 else
-    dataBin = zeros(imAtt.Height, imAtt.Width, imAtt.Depth, numImages);
-    binaryImageSum = zeros(imAtt.Height, imAtt.Width);
+    dataBin = zeros(imAtt(1).Height, imAtt(1).Width, imAtt(1).Depth,numImages);
+    binaryImageSum = zeros(imAtt(1).Height, imAtt(1).Width);
 
     overlappingDataset = 0;
-    numCells = zeros(imAtt.Depth,numImages);
+    numCells = zeros(imAtt(1).Depth,numImages);
 
     for i=1:numImages
-        for j=1:imAtt.Depth
+        for j=1:imAtt(1).Depth
             grayImage = dataIn(:,:,j,i);
 
-            if imAtt.isRGB == 0
+            if imAtt(1).isRGB == 0
                 imagesc(grayImage);
                 colormap(cmap);
                 axis on;
 
-            elseif imAtt.numImages > 1
+            elseif imAtt(1).numImages > 1
                 imshow(dataIn(:,:,:,i));
                 axis on;
             else
