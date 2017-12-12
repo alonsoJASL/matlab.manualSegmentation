@@ -18,7 +18,7 @@ function [imNames] = loadimages(dirname, dataset, returnwhich)
 %
 
 
-allFiles = dir(strcat(dirname, dataset));
+allFiles = dir(fullfile(dirname, dataset));
 allFiles(1:2) = [];
 
 if nargin < 3
